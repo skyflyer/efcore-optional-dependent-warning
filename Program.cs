@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using var loggerFactory = LoggerFactory.Create(builder =>
 {
@@ -10,52 +9,18 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 ILogger logger = loggerFactory.CreateLogger<Program>();
 logger.LogDebug("Starting...");
 
-using (var ctx = new EfTestDbContext())
+using (var ctx = new EfTestDbContext(loggerFactory))
 {
     ctx.Database.EnsureDeleted();
     ctx.Database.EnsureCreated();
-    // await ctx.Database.MigrateAsync();
 }
 
-using (var ctx = new EfTestDbContext())
+using (var ctx = new EfTestDbContext(loggerFactory))
 {
-    var shoppingCart1 = new ShoppingCart("John Doe");
-    ctx.ShoppingCarts.Add(shoppingCart1);
+    var parent = new Parent { Child = new Dependent { HasFlag = true, Optional = "Opts" } };
+    ctx.Parents.Add(parent);
     await ctx.SaveChangesAsync();
 
-    shoppingCart1.SetBilling(new BillingInformation("Aretha Franklin", "23 Elm Street"));
-    shoppingCart1.SetDelivery(new DeliveryInformation("Aretha Franklin", "23 Elm Street", null));
-    await ctx.SaveChangesAsync();
-
-    var shoppingCart2 = new ShoppingCart("John Doe");
-    ctx.ShoppingCarts.Add(shoppingCart2);
-    await ctx.SaveChangesAsync();
-
-    shoppingCart2.SetBilling(new BillingInformation("Aretha Franklin", "23 Elm Street"));
-    await ctx.SaveChangesAsync();
+    parent.Child = new Dependent { HasFlag = true, Optional = "Opts" };
+    await ctx.SaveChangesAsync(); // triggers the warning
 }
-
-// ----------------
-
-using (var ctx = new EfTestDbContext())
-{
-    foreach (var cart in ctx.ShoppingCarts)
-    {
-        logger.LogInformation($"Cart: {cart.Id}");
-        logger.LogInformation($"Salesperson: {cart.Salesperson}");
-        if (cart.BillingInformation != null)
-        {
-            logger.LogInformation($"Billing: {cart.BillingInformation.Name}, {cart.BillingInformation.Address}");
-        }
-        if (cart.DeliveryInformation != null)
-        {
-            logger.LogInformation($"Delivery: {cart.DeliveryInformation.Name}, {cart.DeliveryInformation.Address} floor: {cart.DeliveryInformation.Floor?.ToString() ?? "n/a"}");
-        }
-    }
-}
-
-
-// logger.LogInformation("Info Log");
-// logger.LogWarning("Warning Log");
-// logger.LogError("Error Log");
-// logger.LogCritical("Critical Log");
